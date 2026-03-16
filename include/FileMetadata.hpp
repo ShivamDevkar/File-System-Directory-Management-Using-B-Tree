@@ -82,9 +82,9 @@ struct FileMetadata {
         if (fileSize < 1024)
             return to_string(fileSize) + " B";
         else if (fileSize < 1024 * 1024)
-            return to_string(fileSize / 1024) + " KB";
+            return to_string((double)fileSize / 1024.0) + " KB";
         else
-            return to_string(fileSize / (1024 * 1024)) + " MB";
+            return to_string((double)fileSize / (1024.0 * 1024.0)) + " MB";
     }
 
     // Returns last modified time as a readable string

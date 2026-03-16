@@ -1,6 +1,7 @@
 #pragma once
 
-#include<vector>
+#include <cstddef>
+#include <vector>
 using namespace std;
 
 template <typename KeyType, typename ValueType>
@@ -59,11 +60,11 @@ public:
     // Uses linear search through keys left to right
     // Returns the index of the first key >= searchKey
     int findKeyIndex(const KeyType& searchKey) const {
-        int i = 0;
-        while(i < keys.size() && keys[i] < searchKey){
+        size_t i = 0;
+        while (i < keys.size() && keys[i] < searchKey) {
             i++;
         }
-        return i;
+        return static_cast<int>(i);
     }
 
     // // Returns true if this node contains the exact key
@@ -78,11 +79,11 @@ public:
     // Returns the index of the child pointer to follow
     // when searching for a given key in an internal node
     int findChildIndex(const KeyType& searchKey) const {
-        int i = 0;
-        while(i < (int)keys.size() && searchKey >= keys[i]){
+        size_t i = 0;
+        while (i < keys.size() && searchKey >= keys[i]) {
             i++;
         }
-        return i;
+        return static_cast<int>(i);
     }
 
     // Checks if this node is a sibling of another node
