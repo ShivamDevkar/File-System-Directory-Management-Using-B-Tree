@@ -760,4 +760,11 @@ public:
 
         return true;
     }
+
+    // Returns the root node of this tree
+    // Used by FileSystemManager to walk leaf nodes for ls() and find()
+    BPlusNode<KeyType, ValueType>* getRoot() { return root; }
+
+    // Returns the order of this tree
+    int getOrder() const { return order; }
 };

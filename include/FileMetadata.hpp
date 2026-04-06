@@ -80,7 +80,7 @@ struct FileMetadata {
     // 2048     → "2.00 KB"
     // 2097152  → "2.00 MB"
     string getFormattedSize() const {
-        if (entryType == EntryType::DIRECTORY) return "—";
+        if (entryType == EntryType::DIRECTORY) return "-";
         if (fileSize < 1024)
             return to_string(fileSize) + " B";
         // else if (fileSize < 1024 * 1024)
