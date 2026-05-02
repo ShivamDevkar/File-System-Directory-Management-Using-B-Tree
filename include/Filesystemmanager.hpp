@@ -15,72 +15,77 @@ private:
         BPlusTree<std::string, FileMetadata>*
     > directoryMap;
 
+    std::string resolvePath(const std::string& path) const;
+
     std::string currentDir;
     BPlusTree<std::string, FileMetadata>* currentTree;
     std::stack<std::string> dirHistory;
     int treeOrder;
 
-    // ── PRIVATE HELPERS ──────────────────────────────────────
+    // HELPERS
     std::string buildPath(const std::string& name) const;
-    void findInTree(const std::string& dirPath, const std::string& targetName, std::vector<std::string>& results);
-    void findByExtInTree(const std::string& dirPath, const std::string& ext, std::vector<std::string>& results);
-    void searchKeywordInTree(const std::string& dirPath, const std::string& keyword, std::vector<std::string>& results);
-    void removeDirectoryRecursive(const std::string& dirPath);
-    void treeHelper(const std::string& dirPath, int depth);
-    void duHelper(const std::string& dirPath, size_t& total, int& fileCount, int& dirCount);
 
 public:
 
     FileSystemManager(int order = 4);
     ~FileSystemManager();
 
-    // ── NAVIGATION ───────────────────────────────────────────
+    // NAVIGATION
     void cd(const std::string& path);
     void pwd();
-    void back();                                            // go back to previous dir (cd -)
+    void back();
 
-    // ── LISTING ──────────────────────────────────────────────
-    void ls(bool showHidden = false);
-    void ll();                                              // detailed listing with all metadata
-    void lsSort(const std::string& by);                    // sort by: name / size / time
+    // LISTING
+    void ls(bool showHidden = false);   // ✅ ONLY ONE
+    void ll();
+    void lsSort(const std::string& by);
     void tree(const std::string& path = "", int depth = 0);
 
-    // ── CREATE ───────────────────────────────────────────────
+    // CREATE
     void mkdir(const std::string& name);
-    void mkdirp(const std::string& path);                   // create nested dirs at once
+    void mkdirp(const std::string& path);
     void touch(const std::string& name, size_t size = 0, const std::string& perms = "rw-r--r--");
 
-    // ── DELETE ───────────────────────────────────────────────
+    // DELETE
     void rm(const std::string& name);
-    void rmAll();                                           // delete everything in current dir
+    void rmAll();
 
-    // ── COPY / MOVE / RENAME ─────────────────────────────────
+    // COPY / MOVE
     void mv(const std::string& name, const std::string& destDir);
     void cp(const std::string& name, const std::string& destDir);
     void rename(const std::string& oldName, const std::string& newName);
 
-    // ── SEARCH ───────────────────────────────────────────────
+    // SEARCH
     void find(const std::string& targetName);
-    void findExt(const std::string& ext);                   // find all .pdf, .txt etc
-    void search(const std::string& keyword);                // find files containing keyword
+    void findExt(const std::string& ext);
+    void search(const std::string& keyword);
 
-    // ── FILE INFO ────────────────────────────────────────────
-    void stat(const std::string& name);                     // full metadata of one file
-    void fileCount();                                       // count files and dirs
-    void du();                                              // total disk usage of current dir
+    // FILE INFO
+    void stat(const std::string& name);
+    void fileCount();
+    void du();
 
-    // ── PERMISSIONS ──────────────────────────────────────────
+    // PERMISSIONS
     void chmod(const std::string& name, const std::string& perms);
 
-    // ── UTILITY ──────────────────────────────────────────────
-    void cls();                                             // clear screen
-    void history();                                         // show navigation history
+    // SYSTEM
+    void cls();
+    void history();
 
-    // ── DEBUG / PRESENTATION ─────────────────────────────────
+    // DEBUG
     void displayCurrentTree();
-    void benchmark(int n);                                  // speed test: insert n files
+    void benchmark(int n);
 
-    // ── ACCESSORS ────────────────────────────────────────────
+    // WAL
+    void walLog();
+    void walCount();
+    void walUncommitted();
+
+    // SAVE/LOAD
+    void save();
+    void load();
+
+    // ACCESS
     std::unordered_map<std::string, BPlusTree<std::string, FileMetadata>*>& getDirectoryMap();
     std::string getCurrentDir() const;
     void setCurrentDir(const std::string& dir);

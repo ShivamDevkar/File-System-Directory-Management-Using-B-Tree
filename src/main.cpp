@@ -1,12 +1,17 @@
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 // main.cpp — Interactive CLI Shell (Full Version)
-// ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────
 
 #include <iostream>
 #include <sstream>
 #include <vector>
 #include <string>
-#include "FileSystemManager.hpp"
+#include "BPlusTree.hpp"
+#include "FileMetadata.hpp"
+#include "Utils.hpp"
+#include "Filesystemmanager.hpp"
+#include "Serializer.hpp"
+using namespace Utils;
 
 // ANSI Colors
 const std::string RESET  = "\033[0m";
@@ -17,18 +22,10 @@ const std::string BLUE   = "\033[34m";
 const std::string CYAN   = "\033[36m";
 const std::string BOLD   = "\033[1m";
 
-std::vector<std::string> splitTokens(const std::string& input) {
-    std::vector<std::string> tokens;
-    std::stringstream ss(input);
-    std::string token;
-    while (ss >> token) tokens.push_back(token);
-    return tokens;
-}
-
 void printHelp() {
     std::cout << BOLD << CYAN
         << "\n+------------------------------------------+\n"
-        << "|         FILE SYSTEM ALL COMMANDS       |\n"
+        << "|         FILE SYSTEM ALL COMMANDS        |\n"
         << "+------------------------------------------+\n" << RESET;
 
     std::cout << BOLD << YELLOW << "\n  NAVIGATION\n" << RESET;
@@ -72,10 +69,27 @@ void printHelp() {
     std::cout << BOLD << YELLOW << "\n  PERMISSIONS\n" << RESET;
     std::cout << "  chmod <name> <perm> " << "Change permissions (e.g. rwxr-xr-x)\n";
 
+    std::cout << BOLD << YELLOW << "\n  WAL LOGGER\n" << RESET;
+    std::cout << "  wallog              " << "Print WAL log in table format\n";
+    std::cout << "  walcount            " << "Count total operations logged\n";
+    std::cout << "  waluncommitted      " << "Show uncommitted operations\n";
+
+    std::cout << BOLD << YELLOW << "\n  SERIALIZER\n" << RESET;
+    std::cout << "  save                " << "Save file system to disk\n";
+    std::cout << "  load                " << "Load file system from disk\n";
+    std::cout << "  export              " << "Export file system to text file\n";
+    std::cout << "  saveinfo            " << "Show save file info\n";
+    std::cout << "  verify              " << "Verify save file is not corrupted\n";
+
+    std::cout << BOLD << YELLOW << "\n  UTILS\n" << RESET;
+    std::cout << "  checkpath <path>    " << "Check if path is absolute or relative\n";
+    std::cout << "  normalize <path>    " << "Normalize a path string\n";
+    std::cout << "  ext <filename>      " << "Get file extension\n";
+
     std::cout << BOLD << YELLOW << "\n  SYSTEM\n" << RESET;
     std::cout << "  cls                 " << "Clear the screen\n";
-    std::cout << "  bptree              " << "Show B+ Tree structure (for project demo)\n";
-    std::cout << "  bench <n>           " << "Benchmark: insert n files and measure speed\n";
+    std::cout << "  bptree              " << "Show B+ Tree structure\n";
+    std::cout << "  bench <n>           " << "Benchmark: insert n files\n";
     std::cout << "  help                " << "Show this help\n";
     std::cout << "  exit                " << "Exit\n";
     std::cout << "\n";
@@ -83,7 +97,6 @@ void printHelp() {
 
 int main() {
 
-    // Welcome banner
     std::cout << BOLD << GREEN
         << "\n+==========================================+\n"
         << "|   File System using B+ Trees  v2.0      |\n"
@@ -96,14 +109,13 @@ int main() {
 
     while (true) {
 
-        // Prompt: shows current directory
         std::cout << BOLD << BLUE << fs.getCurrentDir()
                   << RESET << GREEN << " > " << RESET;
 
         if (!std::getline(std::cin, inputLine)) break;
         if (inputLine.empty()) continue;
 
-        std::vector<std::string> tokens = splitTokens(inputLine);
+        std::vector<std::string> tokens = Utils::splitTokens(inputLine);
         if (tokens.empty()) continue;
 
         std::string cmd = tokens[0];
@@ -154,13 +166,11 @@ int main() {
         else if (cmd == "mv") {
             if (tokens.size() < 3) {
                 std::cout << RED << "Usage: mv <filename> <dest_path>\n" << RESET;
-                std::cout << RED << "Example: mv resume.pdf /root/documents\n" << RESET;
             } else fs.mv(tokens[1], tokens[2]);
         }
         else if (cmd == "cp") {
             if (tokens.size() < 3) {
                 std::cout << RED << "Usage: cp <filename> <dest_path>\n" << RESET;
-                std::cout << RED << "Example: cp notes.txt /root/backup\n" << RESET;
             } else fs.cp(tokens[1], tokens[2]);
         }
         else if (cmd == "rename") {
@@ -174,7 +184,7 @@ int main() {
             else fs.find(tokens[1]);
         }
         else if (cmd == "findext") {
-            if (tokens.size() < 2) std::cout << RED << "Usage: findext <.ext>  e.g. findext .pdf\n" << RESET;
+            if (tokens.size() < 2) std::cout << RED << "Usage: findext <.ext>\n" << RESET;
             else fs.findExt(tokens[1]);
         }
         else if (cmd == "search") {
@@ -194,6 +204,53 @@ int main() {
         else if (cmd == "chmod") {
             if (tokens.size() < 3) std::cout << RED << "Usage: chmod <name> <permissions>\n" << RESET;
             else fs.chmod(tokens[1], tokens[2]);
+        }
+
+        // ── WAL LOGGER COMMANDS ───────────────────────────────
+        else if (cmd == "wallog") {
+            fs.walLog();
+        }
+        else if (cmd == "walcount") {
+            fs.walCount();
+        }
+        else if (cmd == "waluncommitted") {
+            fs.walUncommitted();
+        }
+
+        // ── SERIALIZER COMMANDS ───────────────────────────────
+        else if (cmd == "save")    { fs.save(); }
+        else if (cmd == "load")    { fs.load(); }
+        else if (cmd == "export") {
+            Serializer::exportToText(fs.getDirectoryMap(), "docs/filesystem_export.txt");
+        }
+        else if (cmd == "saveinfo") {
+            Serializer::showSaveInfo("data/filesystem.dat");
+        }
+        else if (cmd == "verify") {
+            Serializer::verifySaveFile("data/filesystem.dat");
+        }
+
+        // ── UTILS COMMANDS ────────────────────────────────────
+        else if (cmd == "checkpath") {
+            if (tokens.size() < 2) std::cout << RED << "Usage: checkpath <path>\n" << RESET;
+            else {
+                std::string p = tokens[1];
+                std::cout << "Path: " << p << "\n";
+                std::cout << "Type: " << (Utils::isAbsolutePath(p) ? "Absolute" : "Relative") << "\n";
+                std::cout << "Normalized: " << Utils::normalizePath(p) << "\n";
+            }
+        }
+        else if (cmd == "normalize") {
+            if (tokens.size() < 2) std::cout << RED << "Usage: normalize <path>\n" << RESET;
+            else std::cout << "Normalized: " << Utils::normalizePath(tokens[1]) << "\n";
+        }
+        else if (cmd == "ext") {
+            if (tokens.size() < 2) std::cout << RED << "Usage: ext <filename>\n" << RESET;
+            else {
+                std::string e = Utils::getExtension(tokens[1]);
+                if (e.empty()) std::cout << "No extension found\n";
+                else std::cout << "Extension: " << e << "\n";
+            }
         }
 
         // ── SYSTEM ────────────────────────────────────────────
